@@ -1,14 +1,20 @@
 # Лабораторная работа №2: Простейший чат-бот в Telegram
-- Цель лабораторной работы — получение навыков работы с библиотекой Aiogram, связка API OpenAI и написанного бота.
 
-### Библиотеки:
-- openai — для работы с API.
-- dotenv — для загрузки переменных окружения (например, API-ключ).
-- aiogram - для работы с Telegram API, предоставляет удобный асинхронный интерфейс для создания ботов, обработки сообщений, команд и взаимодействия с пользователем.
+## Цель работы
 
-### Выполение заданий
-- Добавление системного промпта и обращение по имени 
-```
+Цель лабораторной работы — получение навыков работы с библиотекой Aiogram, связка API OpenAI и написанного бота.
+
+## Инструменты и настройки
+
+- **Язык программирования**: Python.
+- **Библиотеки**:
+  - `openai` — для работы с API.
+  - `dotenv` — для загрузки переменных окружения (например, API-ключ).
+  - `aiogram` - для работы с Telegram API, предоставляет удобный асинхронный интерфейс для создания ботов, обработки сообщений, команд и взаимодействия с пользователем.
+
+## 1. Добавление к ассистенту системный промпт
+
+```py
 
 SYSTEM_PROMPT = "Ты заикающийся ассистент."
 
@@ -16,11 +22,9 @@ async def get_response(user_id: int, user_message: str, client: AsyncOpenAI) -> 
     try:
         history = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-        # добавляем последние сообщения из базы
         for role, content in get_messages(user_id):
             history.append({"role": role, "content": content})
 
-        # добавляем новое сообщение пользователя
         history.append({"role": "user", "content": user_message})
 
         response = await client.responses.create(
@@ -28,19 +32,56 @@ async def get_response(user_id: int, user_message: str, client: AsyncOpenAI) -> 
             input=history
         )
 ```
+
+---
+
+## 2. Добавление функции обращения к пользователю по имени:
+- Для того чтобы бот знал имя пользователя, используем атрибут message.from_user.full_name
+
+``` py
+    response = await get_response(message.text, message.from_user.id, message.from_user.full_name, client)
 ```
-@dp.message(CommandStart())
-async def command_start_handler(message: Message) -> None:
-    try:
-        await message.answer(f"Привет, {message.from_user.full_name}, я твой бот-ассистент! Можешь задавать мне вопросы, и я буду отвечать на них. \
-            Пожалуйста, помни про свой баланс на счету аккаунта в OpenAI и не ддось меня без необходимости)")
-    except Exception as e:
-        logging.error(f"Error occurred: {e}")
-```
+Проверка работоспособности бота и проверка user_name 
+---
 ![1](src/1.png)
 
-- Сохронение истории
+## 3. Добавление хранения сообщений и поддержку контекста диалога:
+
+```py
+history = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+    for role, content in get_messages(user_id):
+        history.append({"role": role, "content": content})
+
+    history.append({"role": "user", "content": user_message})
+
+    response = await client.responses.create(
+        model="gpt-4o-mini",
+        input=history
+    )
+
+    answer = response.output_text
+        return answer
 ```
+Проверка работоспособности бота, а также проверка истории
+---
+![2](src/2.png)
+
+## 4. Добавление команды /resetcontext, которая будет сбрасывать контекст диалога
+```py
+    
+@dp.message(Command("reset-context"))
+async def reset_context_handler(message: Message):
+    reset_messages(message.from_user.id)
+    await message.answer("Контекст очищен!")
+```
+
+--- 
+
+
+## 5. Сохронение истории базе данных sqlite
+
+```py
 def add_message(user_id: int, role: str, content: str):
     cursor.execute(
         "INSERT INTO messages (user_id, role, content) VALUES (?, ?, ?)",
@@ -55,16 +96,34 @@ def get_messages(user_id: int, limit: int = 10):
         (user_id, limit)
     )
     rows = cursor.fetchall()
-    return list(reversed(rows))  # чтобы шло в правильном порядке
+    return list(reversed(rows))  
 
 def reset_messages(user_id: int):
     cursor.execute("DELETE FROM messages WHERE user_id = ?", (user_id,))
     conn.commit()
 
 ```
-![2](src/2.png)
+![4](src/4.png)
 
-- Работа с фото
+
+## 6 Добавление обработки ответа на фото
+```py
+elif message.photo:
+            await message.answer("Я не работаю с изображениями")
+```
+Пример работы 
+--- 
 ![3](src/3.png)
 
 
+## Заключение
+
+В ходе выполнения лабораторной работы был создан простой Telegram-бот с использованием библиотеки Aiogram. Были достигнуты следующие цели:
+
+- Реализация системного промпта
+- Обращение к пользователю по имени
+- Хранение сообщений и поддержка контекста диалога 
+- Сброс контекста с помощью команды /reset-context — пользователь получил возможность очистки истории и начала нового диалога.
+- Обработка отправки изображений — бот корректно информирует пользователя о том, что изображения не обрабатываются
+
+Таким образом, была освоена работа с асинхронными функциями, взаимодействие с API OpenAI, использование базы данных SQLite для хранения контекста 

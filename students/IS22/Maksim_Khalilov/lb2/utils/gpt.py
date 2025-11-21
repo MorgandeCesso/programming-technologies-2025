@@ -10,11 +10,9 @@ async def get_response(user_id: int, user_message: str, client: AsyncOpenAI) -> 
     try:
         history = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-        # добавляем последние сообщения из базы
         for role, content in get_messages(user_id):
             history.append({"role": role, "content": content})
 
-        # добавляем новое сообщение пользователя
         history.append({"role": "user", "content": user_message})
 
         response = await client.responses.create(
@@ -24,7 +22,6 @@ async def get_response(user_id: int, user_message: str, client: AsyncOpenAI) -> 
 
         answer = response.output_text
 
-        # сохраняем в БД
         add_message(user_id, "user", user_message)
         add_message(user_id, "assistant", answer)
 
