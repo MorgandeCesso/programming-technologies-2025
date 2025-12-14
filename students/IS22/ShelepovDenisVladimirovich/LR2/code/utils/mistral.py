@@ -1,6 +1,6 @@
 from mistralai import Mistral
 from config import MISTRAL_API_KEY, PROMPT
-from services.database.session import DatabaseSession
+from services.database.models.message import MessageBase
 import logging
 
 client = Mistral(api_key=MISTRAL_API_KEY)
@@ -11,7 +11,7 @@ async def get_response(
     client_full_name: str
 ) -> str:
     try:
-        history = await DatabaseSession.get_messages_by_user_id(user_id)
+        history = await MessageBase.get_messages_by_user_id(user_id)
 
         messages = [
             {"role": "system", "content": f"{PROMPT} {client_full_name}".strip()}
@@ -26,8 +26,8 @@ async def get_response(
         
         assistant_reply = response.choices[0].message.content
         
-        await DatabaseSession.save_message(user_id, "user", user_message)
-        await DatabaseSession.save_message(user_id, "assistant", assistant_reply)
+        await MessageBase.save_message(user_id, "user", user_message)
+        await MessageBase.save_message(user_id, "assistant", assistant_reply)
 
         return assistant_reply
 

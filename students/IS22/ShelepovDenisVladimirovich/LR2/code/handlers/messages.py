@@ -1,16 +1,15 @@
-import aiogram
 from utils.loader import dp
-from aiogram.types import Message, ChatPhoto
+from aiogram.types import Message
 from utils.mistral import get_response
-from services.database.session import DatabaseSession
 import logging
+from services.database.models.user import UserBase
 
 MAX_TEXT_LENGTH = 3500 
 
 @dp.message()
 async def message_handler(message: Message) -> None:
     if message.text: 
-        user = await DatabaseSession.get_or_create_user(
+        user = await UserBase.get_or_create_user(
             tg_id=message.from_user.id,
             username=message.from_user.username,
             full_name=message.from_user.full_name
@@ -25,7 +24,7 @@ async def message_handler(message: Message) -> None:
 
             for part in split_message(response, MAX_TEXT_LENGTH):
                 await message.answer(part, parse_mode=None)
-                await DatabaseSession.save_message(user_id=user.id, role="assistant", content=part)
+                await UserBase.save_message(user_id=user.id, role="assistant", content=part)
 
         except Exception as e:
             logging.error(f"Error in message_handler: {e}")
