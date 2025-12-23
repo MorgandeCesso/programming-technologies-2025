@@ -51,6 +51,8 @@
 
 ![alt text](photo/5.png)
 
+## код контейнера
+
 ```python
 from django.shortcuts import render
 from rest_framework.response import Response
