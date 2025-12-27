@@ -97,11 +97,11 @@ def get_dialog_prompt(list_messages: list, username: str):
 
 ### 1️⃣ Шаг 1 — Кнопка начать Диалог
 
-![img](laba_2/images/image_1.png)
+![img](images/image_1.png)
 
 #### Когда нажимают кнопку диалог начинается, бот спрашивает имя:
 
-![img](laba_2/images/image_2.png)
+![img](images/image_2.png)
 
 #### Бот переводит пользователя в состояние **ожидания имени**.
 
@@ -126,7 +126,7 @@ async def user_init(message: Message, state: FSMContext):
 
 #### После получения имени бот просит подтвердить его:
 
-![img](laba_2/images/image_3.png)
+![img](images/image_3.png)
 
 #### Имя сохраняется во времённое состояние FSM.
 
@@ -178,7 +178,7 @@ async def handle_callback_interaction(query: CallbackQuery, state: FSMContext):
 
 ####
 
-![img](laba_2/images/image_4.png)
+![img](images/image_4.png)
 
 #### Если «Нет»:
 
@@ -186,7 +186,7 @@ async def handle_callback_interaction(query: CallbackQuery, state: FSMContext):
 
 ####
 
-![img](laba_2/images/image_5.png)
+![img](images/image_5.png)
 
 ## ✔️ 3. Хранение сообщений
 
@@ -307,13 +307,13 @@ async def activate_testing(message: Message, state: FSMContext):
 
 ### Пример диалога
 
-![img](laba_2/images/image_6.png)
+![img](images/image_6.png)
 
 ## ✔️ 5. Команда `/reset-context`
 
 ### Добавлена кнопка "Завершить диалог":
 
-![img](laba_2/images/image_7.png)
+![img](images/image_7.png)
 
 ### Код реализации:
 
@@ -334,11 +334,11 @@ async def create_bot(message: Message, state: FSMContext):
 
 ### Завершение диалога
 
-![img](laba_2/images/image_8.png)
+![img](images/image_8.png)
 
 ### Добавлена кнопка "Мои диалоги"
 
-![img](laba_2/images/image_9.png)
+![img](images/image_9.png)
 
 ```python
 @dp.message(lambda message: message.text == my_dialogs, StateFilter(UserState.waiting))
@@ -350,7 +350,7 @@ async def user_init(message: Message, state: FSMContext):
 ```
 
 При нажатии на кнопку открывается история всех диалогов пользователя в формате inline кнопок
-![img](laba_2/images/image_10.png)
+![img](images/image_10.png)
 
 Создана коллбек функциия обработки нажатии на кнопок диалогов:
 
@@ -393,7 +393,7 @@ async def handle_callback_interaction(query: CallbackQuery, state: FSMContext):
 ```
 
 При нажатии на кнопку с диалогом открывается детальная история диалога
-![img](laba_2/images/image_11.png)
+![img](images/image_11.png)
 
 ## ✔️ 6. Поддержка изображений
 
@@ -405,7 +405,7 @@ async def handle_photo(message: Message):
     await message.answer("Вы отправили картинку!")
 ```
 
-![img](laba_2/images/image_12.png)
+![img](images/image_12.png)
 
 ---
 
