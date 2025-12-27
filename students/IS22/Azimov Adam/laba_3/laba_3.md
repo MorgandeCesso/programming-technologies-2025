@@ -30,6 +30,8 @@ Devcontainer — это Docker-контейнер с заранее подгот
 - **Milvus** — векторная база данных
 - **Attu** — веб-интерфейс для управления Milvus
 
+![img](images/image_0.png)
+
 Конфигурация devcontainer располагается по пути:
 intfloat/multilingual-e5-base
 
