@@ -186,7 +186,7 @@ def clear_history(self, user_id: int) -> int:
 ![](assets/3.png)\
 \
 Добавление хранения истории сообщений и поддержку контекста диалога:
-```
+```python
 class Message(Base):
     __tablename__ = "messages"
     id = Column(Integer, primary_key=True, index=True)
