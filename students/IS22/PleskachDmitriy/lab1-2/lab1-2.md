@@ -50,23 +50,23 @@
 1\.Добавление к ассистенту системный промпт:
 
 ```python
-from config import OPENAI\_API\_KEY, SYSTEM\_PROMPT, TEMPERATURE
+from config import OPENAI_API_KEY, SYSTEM_PROMPT, TEMPERATURE
 
-async def get\_response(
-    message: str, username: str, context\_data: str, client: AsyncOpenAI) -> str:
+async def get_response(
+    message: str, username: str, context_data: str, client: AsyncOpenAI) -> str:
     try:
-        personalized\_prompt = (
-            SYSTEM\_PROMPT.format(username=username)
-            if "{username}" in SYSTEM\_PROMPT
-            else f"{SYSTEM\_PROMPT} Общайся с пользователем по имени {username}."
+        personalized_prompt = (
+            SYSTEM_PROMPT.format(username=username)
+            if "{username}" in SYSTEM_PROMPT
+            else f"{SYSTEM_PROMPT} Общайся с пользователем по имени {username}."
         )
         response = await client.responses.create(
             model="gpt-4.1-nano",
             input=message,
-            instructions=personalized\_prompt,
+            instructions=personalized_prompt,
             temperature=TEMPERATURE,
         )
-        return response.output\_text
+        return response.output_text
 ```
 Переменная SYSTEM\_PROMPT= «Ты маэстро музыки, разбираешься во всех тонкостях музыки и чинишь гитары. Веди себя надменно как будто ты все знаешь и для тебя все очевидно.»
 
@@ -84,175 +84,101 @@ async def get\_response(
 
 async def start(message: Message):
 
-`    `await message.answer(
+    await message.answer(
+        f"Привет, {message.from\_user.full\_name}! Я бот-ассистент.")
 
-`        `f"Привет, {message.from\_user.full\_name}! Я бот-ассистент."
+@dp.message(Command("reset_context"))
 
-`    `)
+async def reset_context(message: Message):
+    db.clear(message.from_user.id)
+    await message.answer("Контекст диалога сброшен.")и передаем в функцию запроса к ChatGPT через системный промт
 
-@dp.message(Command("reset\_context"))
+async def get_response(
+    message: str, username: str, context_data: str, client: AsyncOpenAI) -> str:
+    try:
 
-async def reset\_context(message: Message):
+        personalized_prompt = (
+            SYSTEM_PROMPT.format(username=username)
+            if "{username}" in SYSTEM_PROMPT
+            else f"{SYSTEM_PROMPT} Общайся с пользователем по имени {username}.")
 
-`    `db.clear(message.from\_user.id)
+        response = await client.responses.create(
+            model="gpt-4.1-nano",
+            input=full_message,
+            instructions=personalized_prompt,
+            temperature=TEMPERATURE,)
 
-`    `await message.answer("Контекст диалога сброшен.")и передаем в функцию запроса к ChatGPT через системный промт
-
-async def get\_response(
-
-`    `message: str, username: str, context\_data: str, client: AsyncOpenAI
-
-) -> str:
-
-`    `try:
-
-`        `personalized\_prompt = (
-
-`            `SYSTEM\_PROMPT.format(username=username)
-
-`            `if "{username}" in SYSTEM\_PROMPT
-
-`            `else f"{SYSTEM\_PROMPT} Общайся с пользователем по имени {username}."
-
-`        `)
-
-
-`        `response = await client.responses.create(
-
-`            `model="gpt-4.1-nano",
-
-`            `input=full\_message,
-
-`            `instructions=personalized\_prompt,
-
-`            `temperature=TEMPERATURE,
-
-`        `)
-
-`        `return response.output\_text
+        return response.output_text
 ```
 Добавление хранения истории сообщений и поддержку контекста диалога:
 ```python
 class Message(Base):
 
-`    `\_\_tablename\_\_ = "messages"
-
-`    `id = Column(Integer, primary\_key=True, index=True)
-
-`    `user\_id = Column(Integer, index=True)
-
-`    `username = Column(String)
-
-`    `user\_message = Column(Text)
-
-`    `assistant\_message = Column(Text)
-
-`    `created\_at = Column(DateTime, default=func.now())
-
-`    `in\_history = Column(Boolean, default=True)
+    __tablename__ = "messages"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    username = Column(String)
+    user_message = Column(Text)
+    assistant_message = Column(Text)
+    created_at = Column(DateTime, default=func.now())
+    in_history = Column(Boolean, default=True)
 
 class DatabaseManager:
-
-`    `def get\_last\_messages(self, user\_id: int, limit: int = 5) -> list[dict]:
-
-`        `session = self.SessionLocal()
-
-`        `try:
-
-`            `msgs = (
-
-`                `session.query(Message)
-
-.filter(Message.user\_id == user\_id, Message.in\_history == True)
-
-.order\_by(Message.created\_at.desc())
-
+    def get_last_messages(self, user_id: int, limit: int = 5) -> list[dict]:
+       session = self.SessionLocal()
+        try:
+            msgs = (
+                session.query(Message)
+.filter(Message.user_id == user_id, Message.in_history == True)
+.order_by(Message.create_at.desc())
 .limit(limit)
-
-.all()
-
-`            `)
-
-`            `msgs = list(reversed(msgs))
-
-`            `result = []
-
-`            `for msg in msgs:
-
-`                `result.append(
-
-`                    `{
-
-`                        `"user\_message": msg.user\_message,
-
-`                        `"assistant\_message": msg.assistant\_message,
-
-`                    `}
-
-`                `)
-
-`            `return result
-
-`        `finally:
-
-`            `session.close()
+.all())
+            msgs = list(reversed(msgs))
+            result = []
+            for msg in msgs:
+                result.append(
+                    {
+                        "user_message": msg.user_message,
+                        "assistant_message": msg.assistant_message,
+                    }
+                 )
+            return result
+        finally:
+session.close()
 ```
 Для того, чтобы ИИ помнил контекст общения с пользователем, была реализована система ведения истории диалога. История ограницивается 10 последними сообщениями. У каждого пользователя свой сохраненный контекст.
 
 Для упрощения задачи и быстрого прототипирования я решил использовать файл SQLite для хранения истории сообщений и подключаться к нему, что позволяет эффективно управлять данными без необходимости использования более сложных баз данных. Это обеспечило простоту реализации и ускорение процесса разработки, что идеально подходит для учебного прототипа.
 
 Добавление команды /resetcontext, которая будет сбрасывать контекст диалога
+```python
+@dp.message(Command("reset_context"))
 
-@dp.message(Command("reset\_context"))
+async def command_reset_context_handler(message: Message) -> None:
+    `try:
+        user_id = message.from_user.id
+        db_manager.clear_history(user_id)
+        file_path = f"data_json/history_{user_id}.json"
+        if os.path.exists(file_path):
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump([], f, ensure_ascii=False, indent=2)
+        await message.answer("Контекст диалога успешно сброшен.")
+    except Exception as e:
+        logging.error(f"Error occurred: {e}")
+        await message.answer("Произошла ошибка при сбросе контекста диалога.")
 
-async def command\_reset\_context\_handler(message: Message) -> None:
-
-`    `try:
-
-`        `user\_id = message.from\_user.id
-
-`        `db\_manager.clear\_history(user\_id)
-
-`        `file\_path = f"data\_json/history\_{user\_id}.json"
-
-`        `if os.path.exists(file\_path):
-
-`            `with open(file\_path, "w", encoding="utf-8") as f:
-
-`                `json.dump([], f, ensure\_ascii=False, indent=2)
-
-`        `await message.answer("Контекст диалога успешно сброшен.")
-
-`    `except Exception as e:
-
-`        `logging.error(f"Error occurred: {e}")
-
-`        `await message.answer("Произошла ошибка при сбросе контекста диалога.")
-
-def clear\_history(self, user\_id: int) -> int:
-
-`    `session = self.SessionLocal()
-
-`    `try:
-
-`        `updated\_count = (
-
-`            `session.query(Message)
-
-.filter(Message.user\_id == user\_id, Message.in\_history == True)
-
-.update({"in\_history": False})
-
-`        `)
-
-`        `session.commit()
-
-`        `return updated\_count
-
-`    `finally:
-
-`        `session.close()
-
+def clear_history(self, user_id: int) -> int:
+    session = self.SessionLocal()
+    try:
+        updated_count = (
+            `session.query(Message)
+.filter(Message.user_id == user_id, Message.in_history == True)
+.update({"in_history": False}))
+        session.commit()
+        return updated_count
+    finally:
+        session.close()
+```
 Для реализации команды /reset\_context, которая сбрасывает контекст диалога, я создал обработчик для этой команды, который проверяет, есть ли сохраненная история для конкретного пользователя, используя его уникальный user\_id. Когда пользователь отправляет команду /resetcontext, я извлекаю его user\_id из сообщения с помощью message.from\_user.id. Затем, проверяя, существует ли история диалога этого user\_id в таблице, я меняю флаг у сообщений, чтобы они больше не использовались в истории и также отчищаю JSON, который хранит историю в рамках одной сессии. После этого отправляется сообщение, подтверждающее, что история была сброшена и можно начать новый разговор.
 
 ![](assets/2.png)
@@ -260,127 +186,73 @@ def clear\_history(self, user\_id: int) -> int:
 ![](assets/3.png)\
 \
 Добавление хранения истории сообщений и поддержку контекста диалога:
-
+```
 class Message(Base):
-
-`    `\_\_tablename\_\_ = "messages"
-
-`    `id = Column(Integer, primary\_key=True, index=True)
-
-`    `user\_id = Column(Integer, index=True)
-
-`    `username = Column(String)
-
-`    `user\_message = Column(Text)
-
-`    `assistant\_message = Column(Text)
-
-`    `created\_at = Column(DateTime, default=func.now())
-
-`    `in\_history = Column(Boolean, default=True)
+    __tablename__ = "messages"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    username = Column(String)
+    user_message = Column(Text)
+    assistant_message = Column(Text)
+    created_at = Column(DateTime, default=func.now())
+    in_history = Column(Boolean, default=True)
 
 class DatabaseManager:
-
-`    `def get\_last\_messages(self, user\_id: int, limit: int = 5) -> list[dict]:
-
-`        `session = self.SessionLocal()
-
-`        `try:
-
-`            `msgs = (
-
-`                `session.query(Message)
-
-.filter(Message.user\_id == user\_id, Message.in\_history == True)
-
-.order\_by(Message.created\_at.desc())
-
+    def get_last_messages(self, user_id: int, limit: int = 5) -> list[dict]:
+        session = self.SessionLocal()
+        try:
+            msgs = (
+                session.query(Message)
+.filter(Message.user_id == user_id, Message.in_history == True)
+.order_by(Message.created_at.desc())
 .limit(limit)
-
-.all()
-
-`            `)
-
-`            `msgs = list(reversed(msgs))
-
-`            `result = []
-
-`            `for msg in msgs:
-
-`                `result.append(
-
-`                    `{
-
-`                        `"user\_message": msg.user\_message,
-
-`                        `"assistant\_message": msg.assistant\_message,
-
-`                    `}
-
-`                `)
-
-`            `return result
-
-`        `finally:
-
-`            `session.close()
-
+.all())
+            msgs = list(reversed(msgs))
+            result = []
+            for msg in msgs:
+                result.append(
+                    {
+                        "user_message": msg.user_message,
+                        "assistant_message": msg.assistant_message,
+                    }
+                )
+            return result
+        finally:
+            session.close()
+```
 Для того, чтобы ИИ помнил контекст общения с пользователем, была реализована система ведения истории диалога. История ограницивается 10 последними сообщениями. У каждого пользователя свой сохраненный контекст.
 
 Для упрощения задачи и быстрого прототипирования я решил использовать файл SQLite для хранения истории сообщений и подключаться к нему, что позволяет эффективно управлять данными без необходимости использования более сложных баз данных. Это обеспечило простоту реализации и ускорение процесса разработки, что идеально подходит для учебного прототипа.
 
 Добавление команды /reset\_context, которая будет сбрасывать контекст диалога
+```python
+@dp.message(Command("reset_context"))
 
-@dp.message(Command("reset\_context"))
+async def command_reset_context_handler(message: Message) -> None:
+    try:
+        user_id = message.from_user.id
+        db_manager.clear_history(user_id)
+        file_path = f"data_json/history_{user_id}.json"
+        if os.path.exists(file_path):
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump([], f, ensure_ascii=False, indent=2)
+        await message.answer("Контекст диалога успешно сброшен.")
+    except Exception as e:
+        logging.error(f"Error occurred: {e}")
+        await message.answer("Произошла ошибка при сбросе контекста диалога.")
+def clear_history(self, user_id: int) -> int:
+    session = self.SessionLocal()
+    try:
+        updated_count = (
+            session.query(Message)
+.filter(Message.user_id == user_id, Message.in_history == True)
+.update({"in_history": False}))
 
-async def command\_reset\_context\_handler(message: Message) -> None:
-
-`    `try:
-
-`        `user\_id = message.from\_user.id
-
-`        `db\_manager.clear\_history(user\_id)
-
-`        `file\_path = f"data\_json/history\_{user\_id}.json"
-
-`        `if os.path.exists(file\_path):
-
-`            `with open(file\_path, "w", encoding="utf-8") as f:
-
-`                `json.dump([], f, ensure\_ascii=False, indent=2)
-
-`        `await message.answer("Контекст диалога успешно сброшен.")
-
-`    `except Exception as e:
-
-`        `logging.error(f"Error occurred: {e}")
-
-`        `await message.answer("Произошла ошибка при сбросе контекста диалога.")
-
-def clear\_history(self, user\_id: int) -> int:
-
-`    `session = self.SessionLocal()
-
-`    `try:
-
-`        `updated\_count = (
-
-`            `session.query(Message)
-
-.filter(Message.user\_id == user\_id, Message.in\_history == True)
-
-.update({"in\_history": False})
-
-`        `)
-
-`        `session.commit()
-
-`        `return updated\_count
-
-`    `finally:
-
-`        `session.close()
-
+        session.commit()
+        return updated_count
+    finally:
+`        session.close()
+```
 Для реализации команды /reset\_context, которая сбрасывает контекст диалога, я создал обработчик для этой команды, который проверяет, есть ли сохраненная история для конкретного пользователя, используя его уникальный user\_id. Когда пользователь отправляет команду /resetcontext, я извлекаю его user\_id из сообщения с помощью message.from\_user.id. Затем, проверяя, существует ли история диалога этого user\_id в таблице, я меняю флаг у сообщений, чтобы они больше не использовались в истории и также отчищаю JSON, который хранит историю в рамках одной сессии. После этого отправляется сообщение, подтверждающее, что история была сброшена и можно начать новый разговор.
 
 
@@ -389,23 +261,16 @@ def clear\_history(self, user\_id: int) -> int:
 ![](assets/5.png)\
 \
 Добавление поддержки отправки изображений (без их обработки нейронкой).
-
+```python
 @dp.message()
 
-async def message\_handler(message: Message) -> None:
-
-`    `try:
-
-`        `if message.photo:
-
-`            `await message.answer(
-
-`                `"Вы отправили картинку! К сожалению, я не могу обрабатывать изображения."
-
-`            `)
-
-`            `Return
-
+async def message_handler(message: Message) -> None:
+    try:
+        if message.photo:
+            await message.answer(
+                "Вы отправили картинку! К сожалению, я не могу обрабатывать изображения.")
+            Return
+```
 Для обработки сообщений, отличных от текста (например, изображений, видео и других медиа), я добавил проверку типа сообщения с помощью message.photo,которое проверяет, является ли отперавленое сообщение фотографией. Если да, то вывожу пользователю сообщение о том, что бот не работает с фото.\
 \
 ![](Aspose.Words.4c056f22-99d5-45e7-95db-6115672f64c1.006.png)\
