@@ -30,7 +30,7 @@
 ## 4. Задания
 
 В первом задании нужно было запустить описанный выше сценарий с помощью gpu, модифицировав конфиг под использование cuda-зависимостей. Для этого файл docker-compsoe.yml был ненмого изменен.
-```
+```plaintext
     deploy:
       resources:
         reservations:
@@ -51,7 +51,7 @@
 
 ## Код контейнера
 
-```
+```plaintext
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
