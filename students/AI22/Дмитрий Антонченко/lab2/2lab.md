@@ -194,9 +194,4 @@ python main.py
 7. Получает ответ ассистента и сохраняет его в БД
 8. Отправляет ответ пользователю в Telegram
 
-## Полезные ссылки
-
-- [Aiogram Documentation](https://docs.aiogram.dev/)
-- [Groq API Docs](https://console.groq.com/docs)
-- [SQLAlchemy ORM](https://docs.sqlalchemy.org/)
-- [Telegram Bot API](https://core.telegram.org/bots/api)
+## Скрины работы бота
