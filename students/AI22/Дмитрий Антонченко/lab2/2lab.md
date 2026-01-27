@@ -140,6 +140,7 @@ DB_URL=sqlite+aiosqlite:///bot.db
 - Создаёт или получает пользователя
 - Удаляет все его сообщения из БД через функцию reset_context()
 - Подтверждает сброс контекста
+<img width="2110" height="166" alt="4" src="https://github.com/user-attachments/assets/66512447-d61f-4ad9-aa17-2931897c591b" />
 
 ### Этап 7. Обработчик сообщений
 
