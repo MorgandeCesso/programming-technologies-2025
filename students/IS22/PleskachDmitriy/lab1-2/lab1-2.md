@@ -74,42 +74,37 @@ async def get_response(
 
 \
 Добавление функции обращения к пользователю по имени: Для того чтобы бот знал имя пользователя, используем атрибут message.from_user.full_name
+
 ```python
 @dp.message(CommandStart())
-
 async def start(message: Message):
-
     await message.answer(
-        f"Привет, {message.from_user.full_name}! Я бот-ассистент.")
-
-@dp.message(Command("reset_context"))
-
-async def reset_context(message: Message):
-    db.clear(message.from_user.id)
-    await message.answer("Контекст диалога сброшен.")и передаем в функцию запроса к ChatGPT через системный промт
+        f"Привет, {message.from_user.full_name}! Я бот-ассистент."
+    )
 
 async def get_response(
-    message: str, username: str, context_data: str, client: AsyncOpenAI) -> str:
-    try:
+    message: str, username: str, context_data: str, client: AsyncOpenAI
+) -> str:
+    personalized_prompt = (
+        SYSTEM_PROMPT.format(username=username)
+        if "{username}" in SYSTEM_PROMPT
+        else f"{SYSTEM_PROMPT} Общайся с пользователем по имени {username}."
+    )
 
-        personalized_prompt = (
-            SYSTEM_PROMPT.format(username=username)
-            if "{username}" in SYSTEM_PROMPT
-            else f"{SYSTEM_PROMPT} Общайся с пользователем по имени {username}.")
-
-        response = await client.responses.create(
-            model="gpt-4.1-nano",
-            input=full_message,
-            instructions=personalized_prompt,
-            temperature=TEMPERATURE,)
-
-        return response.output_text
+    response = await client.responses.create(
+        model="gpt-4.1-nano",
+        input=full_message,
+        instructions=personalized_prompt,
+        temperature=TEMPERATURE,
+    )
+    return response.output_text
 ```
 Добавление хранения истории сообщений и поддержку контекста диалога:
+
 ```python
 class Message(Base):
-
     __tablename__ = "messages"
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, index=True)
     username = Column(String)
@@ -117,64 +112,32 @@ class Message(Base):
     assistant_message = Column(Text)
     created_at = Column(DateTime, default=func.now())
     in_history = Column(Boolean, default=True)
-
-class DatabaseManager:
-    def get_last_messages(self, user_id: int, limit: int = 5) -> list[dict]:
-       session = self.SessionLocal()
-        try:
-            msgs = (
-                session.query(Message)
-.filter(Message.user_id == user_id, Message.in_history == True)
-.order_by(Message.create_at.desc())
-.limit(limit)
-.all())
-            msgs = list(reversed(msgs))
-            result = []
-            for msg in msgs:
-                result.append(
-                    {
-                        "user_message": msg.user_message,
-                        "assistant_message": msg.assistant_message,
-                    }
-                 )
-            return result
-        finally:
-session.close()
 ```
-Для того, чтобы ИИ помнил контекст общения с пользователем, была реализована система ведения истории диалога. История ограницивается 10 последними сообщениями. У каждого пользователя свой сохраненный контекст.
+Для того, чтобы ИИ помнил контекст общения с пользователем, была реализована система ведения истории диалога. У каждого пользователя свой сохраненный контекст.
 
 Для упрощения задачи и быстрого прототипирования я решил использовать файл SQLite для хранения истории сообщений и подключаться к нему, что позволяет эффективно управлять данными без необходимости использования более сложных баз данных. Это обеспечило простоту реализации и ускорение процесса разработки, что идеально подходит для учебного прототипа.
 
-Добавление команды /resetcontext, которая будет сбрасывать контекст диалога
+Для управления состоянием диалога реализована команда /reset_context, предназначенная для сброса текущего контекста общения.
+
+```python
+def clear_history(self, user_id: int) -> int:
+    updated_count = (
+        self.session.query(Message)
+        .filter(Message.user_id == user_id, Message.in_history == True)
+        .update({"in_history": False})
+    )
+    self.session.commit()
+    return updated_count
+```
+
 ```python
 @dp.message(Command("reset_context"))
-
 async def command_reset_context_handler(message: Message) -> None:
-    `try:
-        user_id = message.from_user.id
-        db_manager.clear_history(user_id)
-        file_path = f"data_json/history_{user_id}.json"
-        if os.path.exists(file_path):
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump([], f, ensure_ascii=False, indent=2)
-        await message.answer("Контекст диалога успешно сброшен.")
-    except Exception as e:
-        logging.error(f"Error occurred: {e}")
-        await message.answer("Произошла ошибка при сбросе контекста диалога.")
-
-def clear_history(self, user_id: int) -> int:
-    session = self.SessionLocal()
-    try:
-        updated_count = (
-            `session.query(Message)
-.filter(Message.user_id == user_id, Message.in_history == True)
-.update({"in_history": False}))
-        session.commit()
-        return updated_count
-    finally:
-        session.close()
+    user_id = message.from_user.id
+    db_manager.clear_history(user_id)
+    await message.answer("Контекст диалога успешно сброшен.")
 ```
-Для реализации команды /reset\_context, которая сбрасывает контекст диалога, я создал обработчик для этой команды, который проверяет, есть ли сохраненная история для конкретного пользователя, используя его уникальный user\_id. Когда пользователь отправляет команду /resetcontext, я извлекаю его user_id из сообщения с помощью message.from\_user.id. Затем, проверяя, существует ли история диалога этого user\_id в таблице, я меняю флаг у сообщений, чтобы они больше не использовались в истории и также отчищаю JSON, который хранит историю в рамках одной сессии. После этого отправляется сообщение, подтверждающее, что история была сброшена и можно начать новый разговор.
+Для реализации команды /reset_context, предназначенной для сброса контекста диалога, используется единая сессия базы данных, инициализируемая при запуске приложения. При получении команды определяется пользователь по его уникальному user_id, извлекаемому из объекта сообщения. Далее выполняется логическое обновление истории сообщений данного пользователя: все записи, участвующие в формировании текущего контекста диалога, помечаются как неактуальные путём изменения значения флага in_history. Изменения фиксируются в базе данных без пересоздания соединения или повторной инициализации сессии. В результате текущий контекст диалога считается сброшенным, а последующие сообщения пользователя формируют новый контекст общения. После выполнения операции пользователю отправляется сообщение, подтверждающее успешный сброс контекста.
 
 ![](assets/2.png)
 \
