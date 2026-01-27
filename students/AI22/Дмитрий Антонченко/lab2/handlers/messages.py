@@ -9,10 +9,7 @@ from config import CONTEXT_LIMIT
 
 @dp.message(lambda m: m.photo is not None)
 async def photo_handler(message: Message) -> None:
-    """
-    Задание: поддержка отправки изображений без обработки нейронкой.
-    Просто отвечаем текстом.
-    """
+    
     try:
         async with AsyncSessionLocal() as session:
             user = await get_or_create_user(
