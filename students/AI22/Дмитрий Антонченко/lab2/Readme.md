@@ -116,7 +116,45 @@ DB_URL=sqlite+aiosqlite:///bot.db
 ### Этап 5. Интеграция с Groq API
 
 Вместо использования OpenAI API (платно), выбрали Groq. API совместим — принимает такой же формат сообщений.
-<img width="1048" height="778" alt="3" src="https://github.com/user-attachments/assets/0aaa47b1-f9ab-48d0-8f0b-830b99a5119e" />
+```bash
+import logging
+from groq import AsyncGroq
+from config import GROQ_API_KEY, SYSTEM_PROMPT
+
+client = AsyncGroq(api_key=GROQ_API_KEY)
+
+async def get_response(user_name: str, context_messages: list[dict]) -> str:
+    """
+    context_messages: [{"role": "user" | "assistant", "content": "..."}]
+    """
+    try:
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "system",
+                "content": f"Имя пользователя: {user_name}. Всегда обращайся к нему по имени."
+            },
+            *context_messages
+        ]
+
+        response = await client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=messages,
+            temperature=0.7
+        )
+
+        return response.choices[0].message.content
+
+    except Exception as e:
+        logging.error(f"Groq error: {e}")
+        return "Произошла ошибка при получении ответа от модели."
+
+```
+
+
+
+
+
 
 Функция get_response() делает следующее:
 1. Собирает систему из двух частей:
@@ -164,7 +202,29 @@ DB_URL=sqlite+aiosqlite:///bot.db
 - Не обрабатывает фото нейросетью (как и требовало задание)
 
 ### Этап 8. Главный файл (main.py)
-<img width="2554" height="1406" alt="5" src="https://github.com/user-attachments/assets/fc035c4f-b049-43be-8cad-2849b67f6292" />
+```bash
+import asyncio
+import logging
+import sys
+
+from handlers import dp
+from utils.loader import bot
+
+from db.session import engine
+from db.base import Base
+
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+async def main():
+    await init_db()
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    asyncio.run(main())
+```
 
 Точка входа делает три вещи:
 1. init_db() — создаёт все таблицы в БД при первом запуске
