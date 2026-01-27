@@ -200,3 +200,5 @@ python main.py
 8. Отправляет ответ пользователю в Telegram
 
 ## Скрины работы бота
+<img width="2104" height="1352" alt="7" src="https://github.com/user-attachments/assets/bc9166cf-60e2-4a22-9aa5-e3551e8126ff" />
+<img width="2104" height="1364" alt="6" src="https://github.com/user-attachments/assets/1eaaf9aa-b027-4014-a761-6f15e7149bf3" />
