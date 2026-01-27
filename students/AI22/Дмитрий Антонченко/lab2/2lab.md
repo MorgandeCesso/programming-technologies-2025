@@ -55,7 +55,7 @@ pip install aiogram groq python-dotenv SQLAlchemy aiosqlite
 pip freeze > requirements.txt
 ```
 
-Затем создали файл .env для хранения секретных ключей. Это критично важно — никогда не коммитим этот файл в репозиторий:
+Затем создали файл .env для хранения секретных ключей:
 ```env
 BOT_TOKEN=токен_от_BotFather
 GROQ_API_KEY=ключ_от_Groq
