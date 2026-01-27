@@ -102,6 +102,7 @@ DB_URL=sqlite+aiosqlite:///bot.db
 - role — кто говорит ("user", "assistant" или "system")
 - content — текст сообщения
 - created_at — время отправки (автоматически устанавливается)
+<img width="2560" height="1396" alt="1" src="https://github.com/user-attachments/assets/01e0ee49-7db3-487b-8eeb-54c2d1971560" />
 
 Связь между ними: один пользователь имеет много сообщений, одно сообщение принадлежит одному пользователю.
 
