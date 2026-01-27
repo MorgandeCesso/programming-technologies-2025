@@ -116,6 +116,7 @@ DB_URL=sqlite+aiosqlite:///bot.db
 ### Этап 5. Интеграция с Groq API
 
 Вместо использования OpenAI API (платно), выбрали Groq. API совместим — принимает такой же формат сообщений.
+<img width="1048" height="778" alt="3" src="https://github.com/user-attachments/assets/0aaa47b1-f9ab-48d0-8f0b-830b99a5119e" />
 
 Функция get_response() делает следующее:
 1. Собирает систему из двух частей:
