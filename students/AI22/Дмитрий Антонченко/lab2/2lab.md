@@ -164,6 +164,7 @@ DB_URL=sqlite+aiosqlite:///bot.db
 - Не обрабатывает фото нейросетью (как и требовало задание)
 
 ### Этап 8. Главный файл (main.py)
+<img width="2554" height="1406" alt="5" src="https://github.com/user-attachments/assets/fc035c4f-b049-43be-8cad-2849b67f6292" />
 
 Точка входа делает три вещи:
 1. init_db() — создаёт все таблицы в БД при первом запуске
