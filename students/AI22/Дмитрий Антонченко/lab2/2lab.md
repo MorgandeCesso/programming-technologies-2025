@@ -65,6 +65,7 @@ DB_URL=sqlite+aiosqlite:///bot.db
 ### Этап 3. Архитектура и структура проекта
 
 Проект организован по функциональным модулям:
+<img width="888" height="818" alt="2" src="https://github.com/user-attachments/assets/113ceb79-2330-41e1-acf1-d6042cf51121" />
 
 **Папка db/** — все что связано с базой данных:
 - base.py — базовый класс для всех моделей SQLAlchemy
